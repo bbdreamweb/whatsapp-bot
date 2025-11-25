@@ -1,6 +1,6 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
 const express = require('express');
+const qrcode = require('qrcode-terminal'); // We keep this just in case
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -20,9 +20,15 @@ const client = new Client({
     }
 });
 
+// --- ಹೊಸ ಬದಲಾವಣೆ ಇಲ್ಲಿದೆ ---
 client.on('qr', (qr) => {
-    console.log('QR RECEIVED', qr);
-    qrcode.generate(qr, { small: true });
+    // QR ಕೋಡ್ ಅನ್ನು ಲಿಂಕ್ ರೂಪದಲ್ಲಿ ಬದಲಾಯಿಸುವುದು
+    const qrLink = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`;
+    
+    console.log('------------------------------------------------');
+    console.log('ಕೆಳಗಿನ ಲಿಂಕ್ ಅನ್ನು ಕ್ಲಿಕ್ ಮಾಡಿ QR ಕೋಡ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ:');
+    console.log(qrLink);
+    console.log('------------------------------------------------');
 });
 
 client.on('ready', () => {
@@ -36,24 +42,21 @@ client.on('group_join', async (notification) => {
         const allChats = await client.getChats();
 
         console.log('Checking user:', newParticipantId);
-
         let count = 0;
 
         for (const c of allChats) {
             if (c.isGroup) {
                 const participants = c.participants;
                 const isMember = participants.some(p => p.id._serialized === newParticipantId);
-
-                if (isMember) {
-                    count++;
-                }
+                if (isMember) count++;
             }
         }
 
         if (count > 1) {
             console.log('User already in another group. Removing...');
-            // Remove the user
             await chat.removeParticipants([newParticipantId]);
+            // Optional: Send message
+            // await client.sendMessage(newParticipantId, "You are strictly allowed in only one group.");
         }
 
     } catch (error) {
